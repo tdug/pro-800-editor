@@ -7,11 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "prepare": "npm run smui-theme-light && npm run smui-theme-dark",
+    "smui-theme-light": "smui-theme compile build/smui.css -i src/theme",
+    "smui-theme-dark": "smui-theme compile build/smui-dark.css -i src/theme/dark"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^2.0.4",
     "@tsconfig/svelte": "^4.0.1",
+    "smui-theme": "^7.0.0-beta.14",
     "svelte": "^3.58.0",
     "svelte-check": "^3.3.1",
     "tslib": "^2.5.0",
@@ -21,6 +25,7 @@
   "dependencies": {
     "@types/pubsub-js": "^1.8.3",
     "@types/webmidi": "^2.0.7",
-    "pubsub-js": "^1.9.4"
+    "pubsub-js": "^1.9.4",
+    "svelte-material-ui": "^7.0.0-beta.14"
   }
 }
