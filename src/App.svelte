@@ -2,7 +2,7 @@
   import svelteLogo from './assets/svelte.svg'
   import viteLogo from '/vite.svg'
   import Counter from './lib/Counter.svelte'
-  import { onMount } from 'svelte';
+  import { onMount, setContext } from 'svelte';
   import PubSub from 'pubsub-js'
   import MidiNotes from './lib/nodes/MIDINotes.svelte';
   import { type MIDIMessageEvent } from './lib/types/MIDIMessageEvent';
@@ -10,15 +10,22 @@
   onMount(async() => {
     try {
       let midiAccess = await navigator.requestMIDIAccess()
+      let inputs = []
+      let outputs = []
       midiAccess.inputs.forEach((input) => {
+        inputs.push(input)
         input.onmidimessage = (event: MIDIMessageEvent) => {
           PubSub.publish(`onmidimessage.${event.currentTarget.id}`, event)
         }
       })
+      midiAccess.outputs.forEach((output) => { outputs.push(output) })
+      console.table(inputs)
+      console.table(outputs)
+      setContext('midiAccess', midiAccess)
     } catch(err) { console.error(err) }
   })
 
-  //PubSub.subscribe('onmidimessage', (message: string, data: WebMidi.MIDIMessageEvent) => { console.log(data) }))
+  //PubSub.subscribe('onmidimessage', (message: string, data: MIDIMessageEvent) => { console.log(data) })
 </script>
 
 <main>
