@@ -11,6 +11,8 @@
   $error: color-palette.$red-900
 );
 
+@use '@material/typography/mixins' as typography;
+
 html,
 body {
   background-color: theme.$surface;
@@ -25,7 +27,6 @@ a:visited {
 }
 
 // Typography -- https://sveltematerialui.com/demo/typography/
-@use '@material/typography/mixins' as typography;
 html { @include typography.typography('body1'); }
 h1 { @include typography.typography('headline1'); }
 h2 { @include typography.typography('headline2'); }

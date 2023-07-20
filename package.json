@@ -9,18 +9,22 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "prepare": "npm run smui-theme-light && npm run smui-theme-dark",
-    "smui-theme-light": "smui-theme compile build/smui.css -i src/theme",
-    "smui-theme-dark": "smui-theme compile build/smui-dark.css -i src/theme/dark"
+    "smui-theme-light": "smui-theme compile public/smui.css -i src/theme",
+    "smui-theme-dark": "smui-theme compile public/smui-dark.css -i src/theme/dark"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^2.4.1",
+    "@smui/button": "^7.0.0-beta.14",
+    "@smui/common": "^7.0.0-beta.14",
+    "@smui/icon-button": "^7.0.0-beta.14",
+    "@smui/top-app-bar": "^7.0.0-beta.14",
+    "@sveltejs/vite-plugin-svelte": "^2.4.2",
     "@tsconfig/svelte": "^4.0.1",
     "smui-theme": "^7.0.0-beta.14",
     "svelte": "^4.0.0",
-    "svelte-check": "^3.4.3",
+    "svelte-check": "^3.4.6",
     "tslib": "^2.5.0",
     "typescript": "^5.0.2",
-    "vite": "^4.3.9"
+    "vite": "^4.4.4"
   },
   "dependencies": {
     "@types/pubsub-js": "^1.8.3",

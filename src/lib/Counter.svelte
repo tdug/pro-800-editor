@@ -1,10 +1,11 @@
 <script lang="ts">
+  import Button, { Label } from '@smui/button'
   let count: number = 0
-  const increment = () => {
-    count += 1
-  }
+  const increment = () => { count++; }
 </script>
 
-<button on:click={increment}>
+<button on:click={() => {count++}}>count is {count}</button>
+
+<Button on:click={() => {count++}}>
   count is {count}
-</button>
+</Button>
