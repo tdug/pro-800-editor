@@ -14,6 +14,7 @@
   import IconButton from '@smui/icon-button';
   import { AutoAdjust } from '@smui/top-app-bar'
   import { writable } from 'svelte/store'
+  import MidiControl from './lib/nodes/MIDIControl.svelte';
 
   const midiAccess = writable(null)
   setContext('midiAccess', midiAccess)
@@ -81,6 +82,7 @@
 
     <div class="card">
       <MidiNotes />
+      <MidiControl />
     </div>
 
     <p>

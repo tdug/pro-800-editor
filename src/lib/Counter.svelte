@@ -4,8 +4,6 @@
   const increment = () => { count++; }
 </script>
 
-<button on:click={() => {count++}}>count is {count}</button>
-
 <Button on:click={() => {count++}}>
-  count is {count}
+  <Label>count is {count}</Label>
 </Button>
