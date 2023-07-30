@@ -1,118 +1,88 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
-  import { onMount, setContext } from 'svelte';
+  import { onMount } from 'svelte';
   import PubSub from 'pubsub-js'
-  import MidiNotes from './lib/nodes/MIDINotes.svelte';
   import type { MIDIMessageEvent } from './lib/types/MIDIMessageEvent';
   import TopAppBar, {
     Row,
     Section,
     Title,
   } from '@smui/top-app-bar';
-  import IconButton from '@smui/icon-button';
   import { AutoAdjust } from '@smui/top-app-bar'
-  import { writable } from 'svelte/store'
-  import MidiControl from './lib/nodes/MIDIControl.svelte';
+  import MidiLog from './lib/MIDILog.svelte';
+  import Pro800 from './lib/Pro800/Container.svelte';
+  import {devices, selectedDevice} from './lib/stores'
+  import Select, {Option} from '@smui/select';
+  import { receive_sysex_data, request_version, Pro800Version } from './lib/pro_800_midi';
 
-  const midiAccess = writable(null)
-  setContext('midiAccess', midiAccess)
+  function setupMidiAccess(midiAccess: WebMidi.MIDIAccess) {
+    midiAccess.inputs.forEach((input) => {
+      input.onmidimessage = (event: MIDIMessageEvent) => {
+        PubSub.publish(`onmidimessage.${event.currentTarget.id}`, event)
+      }
+    })
+    midiAccess.inputs.forEach((device) => { $devices.inputs[device.id] = device })
+    midiAccess.outputs.forEach((device) => { $devices.outputs[device.id] = device })
+  }
+
+  let selectedOutputID: string;
+  function sendIdentify() {
+    console.log("Sending Identify")
+    if(!selectedOutputID) { $selectedDevice = {inputID: null, outputID: null}; return }
+      $devices.outputs[selectedOutputID].send(request_version())
+  }
+  function onFirmwareVersion(version: Pro800Version, event: MIDIMessageEvent) {
+    $selectedDevice = {inputID: event.currentTarget.id, outputID: selectedOutputID}
+    console.log(`PRO 800 Connected. Firmware Version: ${version.major}.${version.minor}.${version.patch}`)
+  }
 
   onMount(async() => {
     try {
-      const _midiAccess = await navigator.requestMIDIAccess()
-      midiAccess.set(_midiAccess)
-      let inputs = []
-      let outputs = []
-      _midiAccess.inputs.forEach((input) => {
-        inputs.push(input)
-        input.onmidimessage = (event: MIDIMessageEvent) => {
-          PubSub.publish(`onmidimessage.${event.currentTarget.id}`, event)
-        }
-      })
-      _midiAccess.outputs.forEach((output) => { outputs.push(output) })
-      console.table(inputs)
-      console.table(outputs)
+      const midiAccess = await navigator.requestMIDIAccess({sysex: true}).then()
+      midiAccess.onstatechange = (event: WebMidi.MIDIConnectionEvent) => {
+        setupMidiAccess(midiAccess)
+      }
+      setupMidiAccess(midiAccess)
     } catch(err) {
       console.error(err)
     }
   })
+  onMount(() => {
+    const token = PubSub.subscribe('onmidimessage', (message: string, event: MIDIMessageEvent) => {
+      if(event.data[0]>>4 != 0xF) { return }
+      try {receive_sysex_data({onFirmwareVersion}, event)} finally {}
+    })
+    return () => { PubSub.unsubscribe(token) }
+  })
 
-  //PubSub.subscribe('onmidimessage', (message: string, data: MIDIMessageEvent) => { console.log(data) })
-  let topAppBar: TopAppBar;
+  let topAppBar: TopAppBar
 </script>
+<MidiLog />
 
+<main>
 <TopAppBar bind:this={topAppBar} variant="standard">
   <Row>
     <Section>
-      <IconButton class="material-icons">menu</IconButton>
-      <Title>WebAudio Playground</Title>
+
+      <!-- <IconButton class="material-icons">menu</IconButton> -->
+      <Title>PRO 800</Title>
     </Section>
     <Section align="end" toolbar>
-      <IconButton class="material-icons" aria-label="Download">
-        file_download
-      </IconButton>
-      <IconButton class="material-icons" aria-label="Print this page">
-        print
-      </IconButton>
-      <IconButton class="material-icons" aria-label="Bookmark this page">
-        bookmark
-      </IconButton>
+      <Select variant="outlined" bind:value={selectedOutputID} on:SMUISelect:change={sendIdentify}>
+        <Option value={null}>Select MIDI [out]</Option>
+        {#each Object.keys($devices.outputs) as outputID}
+          <Option value={outputID}>{$devices.outputs[outputID].name}</Option>
+        {/each}
+      </Select>
     </Section>
   </Row>
 </TopAppBar>
 
 <AutoAdjust {topAppBar}>
-<main>
-
-    <div>
-      <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-        <img src={viteLogo} class="logo" alt="Vite Logo" />
-      </a>
-      <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-        <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-      </a>
-    </div>
-    <h1>Vite + Svelte</h1>
-
-    <div class="card">
-      <Counter />
-    </div>
-
-    <div class="card">
-      <MidiNotes />
-      <MidiControl />
-    </div>
-
-    <p>
-      Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-    </p>
-
-    <p class="read-the-docs">
-      Click on the Vite and Svelte logos to learn more
-    </p>
-
-</main>
+  <Pro800 />
 </AutoAdjust>
+</main>
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
-  }
-
   /* Hide everything above this component. */
   :global(#app),
   :global(body),

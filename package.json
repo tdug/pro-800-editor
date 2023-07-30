@@ -1,5 +1,5 @@
 {
-  "name": "webaudio-sandbox",
+  "name": "pro-800-editor",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,21 +10,31 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "prepare": "npm run smui-theme-light && npm run smui-theme-dark",
     "smui-theme-light": "smui-theme compile public/smui.css -i src/theme",
-    "smui-theme-dark": "smui-theme compile public/smui-dark.css -i src/theme/dark"
+    "smui-theme-dark": "smui-theme compile public/smui-dark.css -i src/theme/dark",
+    "test": "vitest",
+    "test-ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@smui/button": "^7.0.0-beta.14",
     "@smui/common": "^7.0.0-beta.14",
     "@smui/icon-button": "^7.0.0-beta.14",
+    "@smui/layout-grid": "^7.0.0-beta.14",
+    "@smui/select": "^7.0.0-beta.14",
+    "@smui/textfield": "^7.0.0-beta.14",
     "@smui/top-app-bar": "^7.0.0-beta.14",
     "@sveltejs/vite-plugin-svelte": "^2.4.2",
     "@tsconfig/svelte": "^4.0.1",
+    "@types/jest": "^29.5.3",
+    "@vitest/ui": "latest",
+    "jsdom": "latest",
     "smui-theme": "^7.0.0-beta.14",
     "svelte": "^4.0.0",
     "svelte-check": "^3.4.6",
     "tslib": "^2.5.0",
     "typescript": "^5.0.2",
-    "vite": "^4.4.4"
+    "vite": "^4.4.4",
+    "vitest": "latest"
   },
   "dependencies": {
     "@types/pubsub-js": "^1.8.3",
