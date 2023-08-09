@@ -19,16 +19,27 @@ export class Pro800Version {
     }
 }
 export class Pro800SystemSettings {
-    data: Uint8Array
     current_patch_number: number
+    midi_channel: number
 
-    constructor(data: Uint8Array) {
-        this.data = data
-        this.current_patch_number = this.data[6] & (this.data[7] << 7)
+    constructor({
+        current_patch_number,
+        midi_channel
+    } : Pro800SystemSettings) {
+        this.current_patch_number = current_patch_number
+        this.midi_channel = midi_channel
+    }
+
+    static fromBytes(bytes: Uint8Array): Pro800SystemSettings {
         // TODO: Decode the rest of this
+        return new this({
+            current_patch_number: bytes[6] | (bytes[7] << 7),
+            midi_channel: bytes[26]
+        })
     }
 }
-export class Pro800Patch {
+
+abstract class IPro800Patch {
     name: string
     oscillator_a_frequency: number
     oscillator_a_level: number
@@ -56,20 +67,21 @@ export class Pro800Patch {
     amplifier_velocity: number
     filter_velocity: number
 
-    sawtooth_a: boolean
-    triangle_a: boolean
-    square_a: boolean
-    sawtooth_b: boolean
-    triangle_b: boolean
-    square_b: boolean
-    oscillator_sync: boolean
-    poly_mod_frequency_a: boolean
-    poly_mod_filter: boolean
-    low_frequency_oscillator_shape: boolean
-
-    low_frequency_oscillator_target: number
+    sawtooth_a: number
+    triangle_a: number
+    square_a: number
+    sawtooth_b: number
+    triangle_b: number
+    square_b: number
+    oscillator_sync: number
+    poly_mod_frequency_a: number
+    poly_mod_filter: number
 
 
+    //low_frequency_oscillator_shape: boolean
+    //low_frequency_oscillator_target__vco: number
+}
+export class Pro800Patch extends IPro800Patch {
     constructor({
         name,
         oscillator_a_frequency,
@@ -106,8 +118,9 @@ export class Pro800Patch {
         square_b,
         oscillator_sync,
         poly_mod_frequency_a,
-        poly_mod_filter
-    }) {
+        poly_mod_filter,
+    }: IPro800Patch) {
+        super()
         this.name = name
         this.oscillator_a_frequency = oscillator_a_frequency
         this.oscillator_a_level = oscillator_a_level
@@ -148,11 +161,12 @@ export class Pro800Patch {
 
     static fromEncodedBytes(encoded_bytes: Uint8Array): Pro800Patch {
         const decoded_bytes = midi2hex(encoded_bytes)
-        console.log('decoded', decoded_bytes)
+        //console.log('decoded', decoded_bytes)
         return this.fromDecodedBytes(decoded_bytes)
     }
+
     static fromDecodedBytes(decoded_bytes: Uint8Array): Pro800Patch {
-        console.log('DECODED PREFIX', decoded_bytes.slice(0,8))
+        // console.log('DECODED PREFIX', decoded_bytes.slice(0,8))
         const dataview16 = new DataView(decoded_bytes.buffer, 5, 50)
         const dataview8 = new DataView(decoded_bytes.buffer, 52, 17)
 
@@ -165,12 +179,12 @@ export class Pro800Patch {
             name,
             oscillator_a_frequency: dataview16.getUint16(0, true),
             oscillator_a_level: dataview16.getUint16(2, true),
-            oscillator_a_pulse_width: dataview16.getInt16(4, true),
+            oscillator_a_pulse_width: dataview16.getUint16(4, true),
     
             oscillator_b_frequency: dataview16.getUint16(6, true),
             oscillator_b_level: dataview16.getUint16(8, true),
             oscillator_b_pulse_width: dataview16.getUint16(10, true),
-            oscillator_b_fine_tuning: dataview16.getUint16(12, true),
+            oscillator_b_fine_tuning: dataview16.getInt16(12, true),
     
             filter_cutoff: dataview16.getUint16(14, true),
             filter_resonance: dataview16.getUint16(16, true),
@@ -197,32 +211,75 @@ export class Pro800Patch {
             amplifier_velocity: dataview16.getUint16(46, true),
             filter_velocity: dataview16.getUint16(48, true),
 
-            sawtooth_a: dataview8.getUint8(0) > 0x00,
-            triangle_a: dataview8.getUint8(1) > 0x00,
-            square_a: dataview8.getUint8(2) > 0x00,
-            sawtooth_b: dataview8.getUint8(3) > 0x00,
-            triangle_b: dataview8.getUint8(4) > 0x00,
-            square_b: dataview8.getUint8(5) > 0x00,
-            oscillator_sync: dataview8.getUint8(6) > 0x00,
-            poly_mod_frequency_a: dataview8.getUint8(7) > 0x00,
-            poly_mod_filter: dataview8.getUint8(8) > 0x00
+            sawtooth_a: dataview8.getUint8(0),
+            triangle_a: dataview8.getUint8(1),
+            square_a: dataview8.getUint8(2),
+            sawtooth_b: dataview8.getUint8(3),
+            triangle_b: dataview8.getUint8(4),
+            square_b: dataview8.getUint8(5),
+            oscillator_sync: dataview8.getUint8(6),
+            poly_mod_frequency_a: dataview8.getUint8(7),
+            poly_mod_filter: dataview8.getUint8(8)
         })
     }
 
-    controls() {
-        return {
-            8: this.oscillator_a_frequency >> 7,
-            9: this.oscillator_a_level >> 7,
-            10: this.oscillator_a_pulse_width >> 7,
-            11: this.oscillator_b_frequency & 0b111_1111,
-        }
+    toDecodedBytes(): Uint8Array {
+        const fixed_bytes = new Uint8Array(150)
+        const dataview16 = new DataView(fixed_bytes.buffer, 5, 50)
+        const dataview8 = new DataView(fixed_bytes.buffer, 52, 17)
+
+        dataview16.setUint16(0, this.oscillator_a_frequency, true)
+        dataview16.setUint16(2, this.oscillator_a_level, true)
+        dataview16.setUint16(4, this.oscillator_a_pulse_width, true)
+        dataview16.setUint16(6, this.oscillator_b_frequency, true)
+        dataview16.setUint16(8, this.oscillator_b_level, true)
+        dataview16.setUint16(10, this.oscillator_a_pulse_width, true)
+        dataview16.setInt16(12, this.oscillator_b_fine_tuning, true)
+        dataview16.setUint16(14, this.filter_cutoff, true)
+        dataview16.setUint16(16, this.filter_resonance, true)
+        dataview16.setUint16(18, this.filter_envelope_amount, true)
+        dataview16.setUint16(20, this.filter_release, true)
+        dataview16.setUint16(22, this.filter_sustain, true)
+        dataview16.setUint16(24, this.filter_decay, true)
+        dataview16.setUint16(26, this.filter_attack, true)
+        dataview16.setUint16(28, this.amplifier_release, true)
+        dataview16.setUint16(30, this.amplifier_sustain, true)
+        dataview16.setUint16(32, this.amplifier_decay, true)
+        dataview16.setUint16(34, this.amplifier_attack, true)
+        dataview16.setUint16(36, this.poly_mod_filter_envelope, true)
+        dataview16.setUint16(38, this.poly_mod_oscillator_b, true)
+        dataview16.setUint16(40, this.low_frequency_oscillator_frequency, true)
+        dataview16.setUint16(42, this.low_frequency_oscillator_amount, true)
+        dataview16.setUint16(44, this.glide, true)
+        dataview16.setUint16(46, this.amplifier_velocity, true)
+        dataview16.setUint16(48, this.filter_velocity, true)
+
+        dataview8.setUint8(0, Number(this.sawtooth_a) << 6)
+        dataview8.setUint8(1, Number(this.triangle_a) << 6)
+        dataview8.setUint8(2, Number(this.square_a) << 6)
+        dataview8.setUint8(3, Number(this.sawtooth_b) << 6)
+        dataview8.setUint8(4, Number(this.triangle_b) << 6)
+        dataview8.setUint8(5, Number(this.square_b) << 6)
+        dataview8.setUint8(6, Number(this.oscillator_sync) << 6)
+        dataview8.setUint8(7, Number(this.poly_mod_frequency_a) << 6)
+        dataview8.setUint8(8, Number(this.poly_mod_filter) << 6)
+
+
+        const name_bytes = new TextEncoder().encode(this.name)
+        const variable_bytes = new Uint8Array([...name_bytes])
+
+        return new Uint8Array([
+            ...fixed_bytes,
+            ...variable_bytes
+        ])
     }
+
 }
 
 interface Pro800SysExCallbacks {
     onFirmwareVersion?: (firmwareVersion: Pro800Version, event: MIDIMessageEvent) => any
     onSystemSettings?: (systemSettings: Pro800SystemSettings, event: MIDIMessageEvent) => any
-    onPatch?: (patch: Pro800Patch, patchNumber, event: MIDIMessageEvent) => any
+    onPatch?: (patch: Pro800Patch, patchNumber: number, event: MIDIMessageEvent) => any
 }
 
 export function receive_sysex_data(callbacks: Pro800SysExCallbacks, event: MIDIMessageEvent): void {
@@ -233,11 +290,11 @@ export function receive_sysex_data(callbacks: Pro800SysExCallbacks, event: MIDIM
         case 0x78:
             const [lsb, msb] = event.data.slice(9,11)
             const requestNumber = msb<<7 | lsb
+
             if (requestNumber == 510) { // System Settings Code, Hex (little-endian): [0x7E, 0x03]
                 if(!callbacks.onSystemSettings) { break }
-                const systemSettings = new Pro800SystemSettings(event.data.slice(11, -1))
+                const systemSettings = Pro800SystemSettings.fromBytes(event.data.slice(11, -1))
                 callbacks.onSystemSettings(systemSettings, event)
-                break
             } else if(requestNumber < 400) { // Presets are under 400
                 if(!callbacks.onPatch) { break }
                 const patch = Pro800Patch.fromEncodedBytes(event.data.slice(11, -1))
@@ -272,3 +329,7 @@ export function request_patch(n: number): Uint8Array {
     return _send_sysex_data(data)
 }
 
+export function program(n: number, channel: number = 0): Uint8Array {
+    const data = new Uint8Array([0xC0 | channel, n])
+    return data
+}

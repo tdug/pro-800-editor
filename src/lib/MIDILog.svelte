@@ -6,6 +6,7 @@
 
     function onmidimessage(message: string, event: MIDIMessageEvent) {
         const {data: bytes, currentTarget: {id: deviceID}} = event
+        console.log(bytes)
 
         const [command, channel] = [bytes[0] >> 4, bytes[0] & 0xF]
 
@@ -27,6 +28,9 @@
                         break
                 }
                 break
+            case 0xC:
+                verbose = `Program: ${bytes[1]}`
+                break;
             case 0xE:
                 const bendVal = bytes[1] | (bytes[2] << 7)
                 verbose = `Pitch Bend: ${bendVal}, Channel: ${channel}`

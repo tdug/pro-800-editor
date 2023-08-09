@@ -9,7 +9,7 @@
   } from '@smui/top-app-bar';
   import { AutoAdjust } from '@smui/top-app-bar'
   import MidiLog from './lib/MIDILog.svelte';
-  import Pro800 from './lib/Pro800/Container.svelte';
+  import Pro800 from './lib/Pro800/index.svelte';
   import {devices, selectedDevice} from './lib/stores'
   import Select, {Option} from '@smui/select';
   import { receive_sysex_data, request_version, Pro800Version } from './lib/pro_800_midi';

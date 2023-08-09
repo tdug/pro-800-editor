@@ -1,20 +1,51 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { createEventDispatcher } from "svelte";
 
-    export let name: string = null, value: number = 0, onChange: (value: number) => void
+    const dispatch = createEventDispatcher()
+    function commitValue(value: number) {
+        dispatch('change', value)
+    }
+    
+    export let value: number = 0
+    
+    let active: boolean = false
     $: rotate = value * 300
+
+    let startY: number, startValue: number
+
+	function clamp(num: number, min: number, max: number) {
+		return Math.max(min, Math.min(num, max));
+	}
+
+	function pointerMove({ clientY }) {
+		const valueDiff = (clientY - startY) / 100.0
+        value = clamp(startValue - valueDiff, 0, 1)
+	}
+	
+	function pointerDown({ clientY }) {
+        document.body.style.cursor = "ns-resize"
+        active = true
+		startY = clientY
+        startValue = value
+		window.addEventListener('pointermove', pointerMove)
+		window.addEventListener('pointerup', pointerUp)
+	}
+	
+	function pointerUp() {
+        document.body.style.cursor = null
+        active = false
+		window.removeEventListener('pointermove', pointerMove)
+		window.removeEventListener('pointerup', pointerUp)
+        commitValue(value)
+	}
 </script>
 
-<div>
-<div class="knob">
+<div class="knob" class:active={active} on:pointerdown={e => {e.preventDefault(); pointerDown(e)}}>
     <div style="transform: rotate({rotate}deg)" class="marker-container">
         <div class="marker-container--prerotated">
             <div class="marker" />
         </div>
     </div>
-</div>
-
-<h6 class="control-name">{name}</h6>
 </div>
 
 <style lang="scss">
@@ -24,23 +55,23 @@
         border-width: 0.25em;
         border-style: solid;
         aspect-ratio: 1;
+        cursor: grab;
+        &.active {
+            cursor: ns-resize;
+        }
         > .marker-container {
             height: 100%;
-            transition: 0.125s ease-in-out;
             > .marker-container--prerotated {
                 height: 100%;
                 transform: rotate(-150deg);
                 > .marker {
                     background-color: white;
                     height: 40%;
-                    left: -50%;
                     margin-left: 50%;
+                    margin-left: calc(50% - 0.125em);
                     width: 0.25em;
                 }
             }
         }
-    }
-    h6.control-name {
-        margin: 1em 0;
     }
 </style>
