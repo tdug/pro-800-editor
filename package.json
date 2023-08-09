@@ -13,7 +13,9 @@
     "smui-theme-dark": "smui-theme compile public/smui-dark.css -i src/theme/dark",
     "test": "vitest",
     "test-ui": "vitest --ui",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
     "@smui/button": "^7.0.0-beta.14",
@@ -27,6 +29,7 @@
     "@tsconfig/svelte": "^4.0.1",
     "@types/jest": "^29.5.3",
     "@vitest/ui": "latest",
+    "gh-pages": "^5.0.0",
     "jsdom": "latest",
     "smui-theme": "^7.0.0-beta.14",
     "svelte": "^4.0.0",
